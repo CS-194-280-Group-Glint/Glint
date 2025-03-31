@@ -125,7 +125,7 @@ def impact_analysis_prompt(summary: str) -> str:
     ## Instructions
     Analyze the following news summary and describe:
     - The possible impact of the event described
-    - The potential future implications or outcomes
+    - The potential future implications
     - Any affected stakeholders or sectors
 
     ## News Summary:

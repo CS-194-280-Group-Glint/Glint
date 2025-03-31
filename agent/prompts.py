@@ -109,3 +109,80 @@ def key_points_extraction_prompt(text: str, summary: str) -> str:
     ## Key Points:
     """
 
+def impact_analysis_prompt(summary: str) -> str:
+    """
+    Generate a prompt for analyzing the potential impact and future implications of the news.
+    
+    Args:
+        summary: The summary of the news content.
+    
+    Returns:
+        A formatted prompt string.
+    """
+    return f"""
+    # News Impact Analysis Task
+
+    ## Instructions
+    Analyze the following news summary and describe:
+    - The possible impact of the event described
+    - The potential future implications or outcomes
+    - Any affected stakeholders or sectors
+
+    ## News Summary:
+    {summary}
+
+    ## Impact Analysis:
+    """
+
+
+def critical_analysis_prompt(summary: str) -> str:
+    """
+    Generate a prompt for critically analyzing the news content.
+    
+    Args:
+        summary: The summary of the news content.
+    
+    Returns:
+        A formatted prompt string.
+    """
+    return f"""
+    # News Critical Analysis Task
+
+    ## Instructions
+    Critically analyze the following news summary. Provide:
+    - Any potential biases or missing perspectives
+    - Whether the summary is objective and factual
+    - Any important details or viewpoints that might be omitted
+
+    ## News Summary:
+    {summary}
+
+    ## Critical Analysis:
+    """
+
+
+def background_analysis_prompt(summary: str) -> str:
+    """
+    Generate a prompt for providing background context of the news.
+    
+    Args:
+        summary: The summary of the news content.
+    
+    Returns:
+        A formatted prompt string.
+    """
+    return f"""
+    # News Background Context Task
+
+    ## Instructions
+    Based on the following news summary, provide relevant background information and context, such as:
+    - Related historical events
+    - Underlying causes or preceding incidents
+    - Broader socio-political or economic background
+
+    ## News Summary:
+    {summary}
+
+    ## Background Analysis:
+    """
+

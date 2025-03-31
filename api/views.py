@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 import os
 from agent.text_to_audio import TextToAudio
+from agent.summary import SummaryAgent
 
 # Create your views here.
 
@@ -62,3 +63,50 @@ def text_to_speech(request):
         # Clean up temp file
         if 'output_file' in locals() and os.path.exists(output_file):
             os.unlink(output_file)
+
+@api_view(['POST'])
+def summarize_text(request):
+    """
+    Summarize text using the SummaryAgent.
+    
+    Expected payload:
+    {
+        "text": "Text to summarize",
+        "max_length": 200,          # Optional - max length in tokens
+        "with_key_points": false,   # Optional - return key points as well
+        "bullet_format": false,     # Optional - return summary as bullet points
+        "num_bullets": 5,           # Optional - number of bullet points (if bullet_format is true)
+        "model": "gpt-4o"           # Optional - model to use
+    }
+    """
+    # Get parameters from request
+    text = request.data.get('text')
+    if not text:
+        return Response({'error': 'Text is required'}, status=400)
+    
+    max_length = request.data.get('max_length')
+    with_key_points = request.data.get('with_key_points', False)
+    bullet_format = request.data.get('bullet_format', False)
+    num_bullets = int(request.data.get('num_bullets', 5))
+    model = request.data.get('model', 'gpt-4o')
+    
+    # Initialize summary agent
+    agent = SummaryAgent(model_name=model)
+    
+    try:
+        # Handle different summary formats
+        if bullet_format:
+            bullets = agent.bullet_summary(text, num_points=num_bullets)
+            return Response({
+                'bullet_summary': bullets
+            })
+        else:
+            # Generate standard summary
+            result = agent.summarize(
+                text=text, 
+                max_length=max_length,
+                with_key_points=with_key_points
+            )
+            return Response(result)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)

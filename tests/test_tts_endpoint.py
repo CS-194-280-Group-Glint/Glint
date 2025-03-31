@@ -2,7 +2,7 @@ import requests
 import sys
 import json
 
-def test_tts_endpoint(text, output_file="api_response.mp3", voice="nova", model="tts-1", format="mp3", speed=1.0):
+def test_tts_endpoint(text, output_file="audios/api_response.mp3", voice="nova", model="tts-1", format="mp3", speed=1.0):
     """
     Test the text-to-speech API endpoint by sending a POST request.
     

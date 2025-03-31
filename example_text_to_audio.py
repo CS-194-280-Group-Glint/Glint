@@ -1,5 +1,4 @@
 from agent.text_to_audio import TextToAudio
-import os
 
 def main():
     """

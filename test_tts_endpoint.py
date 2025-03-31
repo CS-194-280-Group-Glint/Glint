@@ -1,8 +1,6 @@
 import requests
-import os
 import sys
 import json
-from pathlib import Path
 
 def test_tts_endpoint(text, output_file="api_response.mp3", voice="nova", model="tts-1", format="mp3", speed=1.0):
     """
@@ -54,7 +52,7 @@ def test_tts_endpoint(text, output_file="api_response.mp3", voice="nova", model=
 
 if __name__ == "__main__":
     # Get text from command line argument or use default
-    text = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "This is a test of the text to speech API endpoint."
+    text = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "This is a test of the text to speech API endpoint. I can be an agent that can be used to generate audio from text for a podcast."
     
     # Test the endpoint
     test_tts_endpoint(text) 

@@ -5,6 +5,7 @@ from rest_framework.response import Response
 import os
 from agent.text_to_audio import TextToAudio
 from agent.summary import SummaryAgent
+from agent.analysis import AnalysisAgent
 
 # Create your views here.
 
@@ -108,5 +109,33 @@ def summarize_text(request):
                 with_key_points=with_key_points
             )
             return Response(result)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+    
+@api_view(['POST'])
+def analyze_text(request):
+    """
+    Analyze news summary using the AnalysisAgent.
+    
+    Expected payload:
+    {
+        "summary": "The summarized news content",
+        "model": "gpt-4o"  # Optional - model to use
+    }
+    """
+    #get parameters from request
+    summary = request.data.get('summary')
+    if not summary:
+        return Response({'error': 'Summary is required'}, status=400)
+    
+    model = request.data.get('model', 'gpt-4o')
+    
+    #initialize analysis agent
+    agent = AnalysisAgent(model_name=model)
+    
+    try:
+        #run all analysis tasks
+        result = agent.analyze_all(summary)
+        return Response(result)
     except Exception as e:
         return Response({'error': str(e)}, status=500)

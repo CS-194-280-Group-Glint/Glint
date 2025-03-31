@@ -28,3 +28,15 @@ Temporary Items
 
 #jetbrain
 .idea
+
+# Python virtual environment
+venv/
+env/
+.env/
+.venv/
+
+#mp3
+*.mp3
+
+# db
+db.sqlite3

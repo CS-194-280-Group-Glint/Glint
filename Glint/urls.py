@@ -16,7 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from api.views import text_to_speech
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/text-to-speech/', text_to_speech, name='text_to_speech'),
 ]

@@ -17,6 +17,7 @@ def text_to_speech(request):
     Expected payload:
     {
         "text": "Text to convert to speech",
+
         "voice": "nova",  # Optional
         "model": "tts-1",  # Optional
         "format": "mp3",   # Optional
@@ -115,7 +116,7 @@ def summarize_text(request):
 @api_view(['POST'])
 def analyze_text(request):
     """
-    Analyze news summary using the AnalysisAgent.
+    Analyze news using the AnalysisAgent.
     
     Expected payload:
     {

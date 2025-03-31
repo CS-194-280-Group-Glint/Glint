@@ -97,7 +97,7 @@ class AnalysisAgent:
             summary: The summarized news content.
 
         Returns:
-            A dictionary containing all three types of analysis.
+            A dictionary containing three types of analysis.
         """
         return {
             "impact_analysis": self.analyze_impact(summary),

@@ -31,4 +31,4 @@ class CriticalAnalysis(dspy.Signature):
 class BackgroundAnalysis(dspy.Signature):
     """Signature for providing background context of the news."""
     user_instructions: str = dspy.InputField()
-    background_analysis: str = dspy.OutputField(desc="Relevant background information and context about the news")
+    background_analysis: str = dspy.OutputField(desc="Relevant background information about the news")

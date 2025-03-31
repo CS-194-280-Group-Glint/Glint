@@ -35,6 +35,11 @@ env/
 .env/
 .venv/
 
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
 #mp3
 *.mp3
 

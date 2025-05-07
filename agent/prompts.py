@@ -186,3 +186,37 @@ def background_analysis_prompt(summary: str) -> str:
     ## Background Analysis:
     """
 
+
+def podcast_prompt_template(
+        news_summary: str,
+        weather: str,
+        reflection: str,
+        user_style: str
+) -> str:
+    """Construct structured prompt for podcast script generation."""
+    return f"""
+    **Task**: Create a 10-minute engaging podcast script combining these elements:
+
+    **News Summary**:
+    {news_summary}
+
+    **Current Time and Weather**:
+    {weather}
+
+    **Analytical Reflection**:
+    {reflection}
+
+    **Style Requirements**:
+    {user_style if user_style else "Standard engaging podcast format"}
+
+    **Structure Guidance**:
+    1. Open with weather and time related greeting, if no context open with general greeting
+    2. Introduce news topic naturally
+    3. Blend analysis with real-world connections
+    4. Maintain {user_style} tone throughout
+    5. Close with memorable remark
+    6. Script should have at most 4096 characters
+
+    Include verbal cues like [BACKGROUND MUSIC] and [PAUSE] where appropriate.
+    """
+

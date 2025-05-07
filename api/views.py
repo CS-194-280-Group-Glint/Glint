@@ -1,142 +1,212 @@
-from django.shortcuts import render
-from django.http import HttpResponse, FileResponse
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-import os
+from typing import Dict, Optional
+from django.conf import settings
 from agent.text_to_audio import TextToAudio
 from agent.summary import SummaryAgent
 from agent.analysis import AnalysisAgent
+from agent.podcast import PodcastScriptAgent
+from agent.news import get_top_news
 
-# Create your views here.
+from django.shortcuts import render
+from django.http import JsonResponse
+from pathlib import Path
+import json
+import logging
+import uuid
 
-@api_view(['POST'])
-def text_to_speech(request):
-    """
-    Convert text to speech using OpenAI's TTS service.
-    
-    Expected payload:
-    {
-        "text": "Text to convert to speech",
+logger = logging.getLogger(__name__)
 
-        "voice": "nova",  # Optional
-        "model": "tts-1",  # Optional
-        "format": "mp3",   # Optional
-        "speed": 1.0       # Optional
+
+def podcast(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    data = json.loads(request.body)
+    category = data.get('category')
+    style = data.get('style')
+    voice = data.get('voice', "nova")
+    speed = data.get('speed', 1.0)
+    audio = generate_podcast(category=category, style=style, voice=voice, speed=speed)
+    if not audio["result"]:
+        return JsonResponse({'error': audio["error"]}, status=404)
+    path = audio["data"].replace("static/", "")
+    context = {
+        'audio_file': path
     }
+    return render(request, 'test.html', context)
+
+
+def index(request):
+    return render(request, 'index.html')
+
+
+def generate_podcast(
+        category: list,
+        style: str,
+        voice: str = "nova",
+        speed: float = 1.0
+) -> Dict:
+    all_news = []
+    for c in category:
+        all_news.append(get_top_news(api_key=settings.NEWS_API_KEY, category=c, page_size=5))
+    summary = summarize_text(str(all_news))
+    if not summary["result"]:
+        return {"result": False, "error": summary["error"]}
+    summary = str(summary["data"])
+    analysis = analyze_text(summary)
+    if not analysis["result"]:
+        return {"result": False, "error": analysis["error"]}
+    analysis = analysis["data"]
+
+    # 要加一个获取当前时间+天气 连成字符串的function call
+
+    script = write_script(news_summary=summary,
+                          weather="",
+                          reflection=str(analysis),
+                          user_style=style)
+    if not script["result"]:
+        return {"result": False, "error": script["error"]}
+    script = script["data"]
+    audio = text_to_speech(text=script,
+                           speed=speed,
+                           voice=voice)
+    if not audio["result"]:
+        return {"result": False, "error": audio["error"]}
+    return {"result": True, "data": audio["data"]}
+
+
+def text_to_speech(
+        text: str,
+        voice: str = "nova",
+        model: str = "tts-1",
+        speed: float = 1.0,
+        output_dir: str = "static/audio"
+) -> Dict:
     """
-    # Get parameters from request
-    text = request.data.get('text')
-    if not text:
-        return Response({'error': 'Text is required'}, status=400)
-    
-    voice = request.data.get('voice', 'nova')
-    model = request.data.get('model', 'tts-1')
-    format = request.data.get('format', 'mp3')
-    speed = float(request.data.get('speed', 1.0))
-    
-    # Initialize TTS converter
-    converter = TextToAudio(
-        model=model,
-        voice=voice,
-    )
-    
-    # Convert text to speech
+    Convert text to speech and return result dictionary
+
+    Args:
+        text: Input text to synthesize
+        voice: Voice style (default: 'nova')
+        model: TTS model version (default: 'tts-1')
+        speed: Speech speed ratio (0.25-4.0)
+        output_dir: Output directory path (default: 'tts_output')
+
+    Returns:
+        dict: {'result': True, 'path': str} or {'result': False, 'error': str}
+
+    Example:
+        text_to_speech("Hello world")
+        {'result': True, 'path': 'tts_output/9f86d081.mp3'}
+    """
+    # Validate input parameters
+    if not text.strip():
+        return {"result": False, "error": "Text is required"}
+
+    if not 0.25 <= speed <= 4.0:
+        return {"result": False, "error": "Speed must be between 0.25 and 4.0"}
+
     try:
-        output_file = converter.convert_to_temp_file(
-            text=text,
-            response_format=format,
-            speed=speed,
-        )
-        
-        # Return the audio file
-        response = FileResponse(
-            open(output_file, 'rb'),
-            content_type=f'audio/{format}',
-            as_attachment=True,
-            filename=f'speech.{format}'
-        )
-        
-        # Set header to delete the temp file after it's sent
-        response['X-Accel-Buffering'] = 'no'
-        return response
+        # Create output directory
+        output_path = Path(output_dir)
+
+        # Generate unique filename
+        file_name = f"{uuid.uuid4().hex[:8]}.mp3"
+        rel_path = str(output_path / file_name)
+
+        # Initialize and convert
+        converter = TextToAudio(api_key=settings.OPENAI_API_KEY, model=model, voice=voice)
+        converter.convert(text=text, output_path=rel_path, speed=speed)
+
+        return {"result": True, "data": rel_path}
+
     except Exception as e:
-        return Response({'error': str(e)}, status=500)
-    finally:
-        # Clean up temp file
-        if 'output_file' in locals() and os.path.exists(output_file):
-            os.unlink(output_file)
+        return {"result": False, "error": f"Conversion failed: {str(e)}"}
 
-@api_view(['POST'])
-def summarize_text(request):
+
+def summarize_text(
+        text: str,
+        max_length: Optional[int] = None,
+        with_key_points: bool = False,
+        bullet_format: bool = False,
+        num_bullets: int = 5,
+        model: str = "gpt-4o"
+) -> Dict:
     """
-    Summarize text using the SummaryAgent.
-    
-    Expected payload:
-    {
-        "text": "Text to summarize",
-        "max_length": 200,          # Optional - max length in tokens
-        "with_key_points": false,   # Optional - return key points as well
-        "bullet_format": false,     # Optional - return summary as bullet points
-        "num_bullets": 5,           # Optional - number of bullet points (if bullet_format is true)
-        "model": "gpt-4o"           # Optional - model to use
-    }
+    Summarize text using the SummaryAgent
+
+    Args:
+        text: Text to summarize
+        max_length: Optional max length in tokens
+        with_key_points: Return key points as well
+        bullet_format: Return summary as bullet points
+        num_bullets: Number of bullet points (if bullet_format)
+        model: Model to use
+
+    Returns:
+        Dictionary with results or error message
     """
-    # Get parameters from request
-    text = request.data.get('text')
-    if not text:
-        return Response({'error': 'Text is required'}, status=400)
-    
-    max_length = request.data.get('max_length')
-    with_key_points = request.data.get('with_key_points', False)
-    bullet_format = request.data.get('bullet_format', False)
-    num_bullets = int(request.data.get('num_bullets', 5))
-    model = request.data.get('model', 'gpt-4o')
-    
-    # Initialize summary agent
+    if not text.strip():
+        return {"result": False, 'error': 'Text is required'}
+
     agent = SummaryAgent(model_name=model)
-    
+
     try:
-        # Handle different summary formats
         if bullet_format:
             bullets = agent.bullet_summary(text, num_points=num_bullets)
-            return Response({
-                'bullet_summary': bullets
-            })
+            return {'bullet_summary': bullets}
         else:
-            # Generate standard summary
             result = agent.summarize(
-                text=text, 
+                text=text,
                 max_length=max_length,
                 with_key_points=with_key_points
             )
-            return Response(result)
+            return {'result': True, 'data': result}
     except Exception as e:
-        return Response({'error': str(e)}, status=500)
-    
-@api_view(['POST'])
-def analyze_text(request):
+        return {"result": False, 'error': str(e)}
+
+
+def analyze_text(
+        summary: str,
+        model: str = "gpt-4o"
+) -> Dict:
     """
-    Analyze news using the AnalysisAgent.
-    
-    Expected payload:
-    {
-        "summary": "The summarized news content",
-        "model": "gpt-4o"  # Optional - model to use
-    }
+    Analyze news using the AnalysisAgent
+
+    Args:
+        summary: The summarized news content
+        model: Model to use
+
+    Returns:
+        Dictionary with analysis results or error message
     """
-    #get parameters from request
-    summary = request.data.get('summary')
-    if not summary:
-        return Response({'error': 'Summary is required'}, status=400)
-    
-    model = request.data.get('model', 'gpt-4o')
-    
-    #initialize analysis agent
+    if not summary.strip():
+        return {"result": False, 'error': 'Summary is required'}
+
     agent = AnalysisAgent(model_name=model)
-    
+
     try:
-        #run all analysis tasks
         result = agent.analyze_all(summary)
-        return Response(result)
+        return {'result': True, 'data': result}
     except Exception as e:
-        return Response({'error': str(e)}, status=500)
+        return {"result": False, 'error': str(e)}
+
+
+def write_script(
+        news_summary: str,
+        weather: str,
+        reflection: str,
+        user_style: Optional[str] = None,
+        length_minutes: int = 10
+) -> Dict:
+    agent = PodcastScriptAgent()
+
+    try:
+        script = agent.generate_script(
+            news_summary=news_summary,
+            weather=weather,
+            reflection=reflection,
+            user_style=user_style,
+            length_minutes=length_minutes
+        )
+        return {'result': True, 'data': script}
+    except Exception as e:
+        return {"result": False, 'error': str(e)}

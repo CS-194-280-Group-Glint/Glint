@@ -32,3 +32,16 @@ class BackgroundAnalysis(dspy.Signature):
     """Signature for providing background context of the news."""
     user_instructions: str = dspy.InputField()
     background_analysis: str = dspy.OutputField(desc="Relevant background information about the news")
+
+
+class PodcastScriptGeneration(dspy.Signature):
+    """Generate engaging podcast script integrating multiple content elements with style adaptation."""
+
+    user_instructions = dspy.InputField(
+        desc="Structured template with news/weather/analysis/style requirements"
+    )
+
+    script = dspy.OutputField(
+        desc="Full podcast script with narration, audio cues, and styled delivery",
+        prefix="**Final Podcast Script**:\n"
+    )

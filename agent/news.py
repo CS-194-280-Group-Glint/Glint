@@ -39,8 +39,6 @@ def get_top_news(
                 "title": article["title"],
                 "source": article["source"]["name"],
                 "description": article.get("description"),
-                "url": article["url"],
-                "image": article.get("urlToImage"),
                 "published_at": article["publishedAt"],
                 "content": article.get("content", "")
             } for article in data["articles"]]

@@ -1,11 +1,13 @@
+from django.conf import settings
 import dspy
+
 
 class LMFactory:
     @staticmethod
     def get_model(
-        provider: str,
-        model_name: str,
-        **kwargs,
+            provider: str,
+            model_name: str,
+            **kwargs,
     ) -> dspy.LM:
         if provider == "openai":
             return get_openai_model(model_name)
@@ -31,4 +33,4 @@ def get_openai_model(model_name: str) -> dspy.LM:
     config = model_configs[model_name]
     kwargs = {k: v for k, v in config.items() if v is not None}
 
-    return dspy.LM(f"openai/{model_name}", cache=False, **kwargs)
+    return dspy.LM(f"openai/{model_name}", cache=False, api_key=settings.OPENAI_API_KEY, **kwargs)

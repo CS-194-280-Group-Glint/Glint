@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio Player</title>
+</head>
+<body>
+    <h1>音频播放器</h1>
+    {% load static %}
+    <!-- HTML5音频播放器 -->
+    <audio controls>
+        <!-- 使用static标签组合完整路径 -->
+        <source src="{% static audio_file %}" type="audio/mpeg">
+        您的浏览器不支持音频播放
+    </audio>
+</body>
+</html>

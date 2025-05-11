@@ -12,27 +12,47 @@ from pathlib import Path
 import json
 import logging
 import uuid
+import traceback
 
 logger = logging.getLogger(__name__)
 
 
 def podcast(request):
+    # if request.method != 'POST':
+    #     return JsonResponse({'error': 'Method not allowed'}, status=405)
+    # data = json.loads(request.body)
+    # category = data.get('category')
+    # style = data.get('style')
+    # career = data.get('career')
+    # voice = data.get('voice', "nova")
+    # speed = data.get('speed', 1.0)
+    # audio = generate_podcast(category=category, style=style, career=career, voice=voice, speed=speed)
+    # if not audio["result"]:
+    #     return JsonResponse({'error': audio["error"]}, status=404)
+    # path = audio["data"].replace("static/", "")
+    # context = {
+    #     'audio_file': path
+    # }
+    # return render(request, 'test.html', context)
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+
     data = json.loads(request.body)
-    category = data.get('category')
-    style = data.get('style')
-    voice = data.get('voice', "nova")
+    category = data.get('category', [])
+    style = data.get('style', 'casual')
+    career = data.get('career', 'student')
+    voice = data.get('voice', 'nova')
     speed = data.get('speed', 1.0)
-    audio = generate_podcast(category=category, style=style, voice=voice, speed=speed)
+
+    audio = generate_podcast(category=category, style=style, career=career, voice=voice, speed=speed)
+
     if not audio["result"]:
         return JsonResponse({'error': audio["error"]}, status=404)
-    path = audio["data"].replace("static/", "")
-    context = {
-        'audio_file': path
-    }
-    return render(request, 'test.html', context)
+    
+    path = audio["data"]
+    context = {'audio_file': path}
 
+    return render(request, 'test.html', context)
 
 def index(request):
     return render(request, 'index.html')
@@ -41,6 +61,7 @@ def index(request):
 def generate_podcast(
         category: list,
         style: str,
+        career: str,
         voice: str = "nova",
         speed: float = 1.0
 ) -> Dict:

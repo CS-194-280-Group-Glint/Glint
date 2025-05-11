@@ -16,13 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from api.views import index, podcast, analyze_text_endpoint, summarize_text_endpoint, classify_news_endpoint
+from api.views import index, podcast
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index, name='index'),
     path('api/generate-podcast/', podcast, name='podcast'),
-    path('api/analyze-text/', analyze_text_endpoint, name='analyze_text'),
-    path('api/summarize-text/', summarize_text_endpoint, name='summarize_text'),
-    path('api/classify-news/', classify_news_endpoint, name='classify_news'),
 ]

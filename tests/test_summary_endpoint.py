@@ -8,9 +8,6 @@ def test_summary_endpoint(
     with_key_points=False, 
     bullet_format=False, 
     num_bullets=5,
-    content_type="general",
-    user_interests=None,
-    user_career=None,
     model="gpt-4o"
 ):
     """
@@ -22,9 +19,6 @@ def test_summary_endpoint(
         with_key_points: Whether to include key points (optional)
         bullet_format: Whether to return summary as bullets (optional)
         num_bullets: Number of bullet points (optional)
-        content_type: Type of content being summarized (optional)
-        user_interests: List of user's interest categories (optional)
-        user_career: User's career or professional field (optional)
         model: LLM model to use (optional)
     """
     # API endpoint URL
@@ -35,7 +29,6 @@ def test_summary_endpoint(
         "text": text,
         "with_key_points": with_key_points,
         "bullet_format": bullet_format,
-        "content_type": content_type,
         "model": model
     }
     
@@ -44,23 +37,13 @@ def test_summary_endpoint(
         payload["max_length"] = max_length
     if bullet_format:
         payload["num_bullets"] = num_bullets
-    if user_interests:
-        payload["user_interests"] = user_interests
-    if user_career:
-        payload["user_career"] = user_career
-    
-    # Set headers to exempt from CSRF
-    headers = {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-    }
     
     print(f"Sending request to {url}...")
     print(f"Payload: {json.dumps(payload, indent=2)}")
     
     try:
         # Send POST request
-        response = requests.post(url, json=payload, headers=headers)
+        response = requests.post(url, json=payload)
         
         # Check if request was successful
         if response.status_code == 200:
@@ -72,13 +55,11 @@ def test_summary_endpoint(
             
             if bullet_format:
                 print("Bullet Summary:")
-                bullets = result if isinstance(result, list) else []
-                for i, bullet in enumerate(bullets, 1):
+                for i, bullet in enumerate(result.get("bullet_summary", []), 1):
                     print(f"{i}. {bullet}")
             else:
                 print("Summary:")
-                summary = result.get("summary", "No summary generated")
-                print(summary)
+                print(result.get("summary", "No summary generated"))
                 
                 if with_key_points and "key_points" in result:
                     print("\nKey Points:")
@@ -96,22 +77,33 @@ def test_summary_endpoint(
         return None
 
 if __name__ == "__main__":
+    # Get text from command line argument or use sample text
     if len(sys.argv) > 1:
         text = " ".join(sys.argv[1:])
     else:
         text = """
-        Tesla has announced a major breakthrough in artificial intelligence for self-driving cars. 
-        The new AI system, which will be rolled out in the next software update, uses advanced 
-        neural networks to better recognize pedestrians, cyclists, and other vehicles in complex 
-        urban environments. The company claims this will reduce accident rates by up to 30% compared 
-        to previous systems. Industry analysts predict this could accelerate the adoption of 
-        self-driving technology across the automotive sector. Tesla stock rose 10% on the announcement.
+        Artificial intelligence (AI) is intelligence demonstrated by machines, as opposed to the natural 
+        intelligence displayed by animals and humans. AI research has been defined as the field of study of 
+        intelligent agents, which refers to any system that perceives its environment and takes actions that 
+        maximize its chance of achieving its goals.
+
+        The term "artificial intelligence" had previously been used to describe machines that mimic and display 
+        "human" cognitive skills that are associated with the human mind, such as "learning" and "problem-solving". 
+        This definition has since been rejected by major AI researchers who now describe AI in terms of rationality 
+        and acting rationally, which does not limit how intelligence can be articulated.
+        
+        AI applications include advanced web search engines (e.g., Google), recommendation systems (used by YouTube, 
+        Amazon, and Netflix), understanding human speech (such as Siri and Alexa), self-driving cars (e.g., Waymo), 
+        generative or creative tools (ChatGPT and AI art), automated decision-making, and competing at the highest 
+        level in strategic game systems (such as chess and Go).
         """
     
-    # Example of user interests and career for testing
-    user_interests = ["technology", "automotive"]
-    user_career = "software engineer"
+    # Test the endpoint
+    print("\n1. Standard summary:")
+    test_summary_endpoint(text)
     
-    # Test with personalization
-    print("\nRunning Summary Agent Test with personalization...")
-    test_summary_endpoint(text, user_interests=user_interests, user_career=user_career) 
+    print("\n2. Summary with key points:")
+    test_summary_endpoint(text, with_key_points=True)
+    
+    print("\n3. Bullet point summary:")
+    test_summary_endpoint(text, bullet_format=True, num_bullets=3) 

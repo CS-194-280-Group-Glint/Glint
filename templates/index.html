@@ -75,7 +75,29 @@
 
         <label>Speed:</label><br>
         <input type="number" name="speed" step="0.1" min="0.25" max="4.0" value="1.0"><br>
-        <small>Must be between 0.25 and 4.0.</small><br><br>
+        <small>Must be between 0.25 and 4.0.</small>
+        <br><br>
+
+        <label>Model:</label><br>
+        <select name="model">
+          <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+          <option value="gpt-4">gpt-4</option>
+          <option value="gpt-4o">gpt-4o</option>
+          <option value="gpt-4-turbo">gpt-4-turbo</option>
+          <option value="claude-instant-1">claude-instant-1</option>
+          <option value="claude-2">claude-2</option>
+          <option value="claude-3-opus">claude-3-opus</option>
+          <option value="claude-3-sonnet">claude-3-sonnet</option>
+        </select>
+        <br><br>
+
+        <label>NewsAPI Key:</label><br>
+        <input type="text" name="newsapi" class="newsapi" placeholder="Enter your NewsAPI Key">
+        <br><br>
+
+        <label>Model API Key:</label><br>
+        <input type="text" name="modelapi" class="openaiapi" placeholder="Enter your API Key">
+        <br><br>
 
         <button type="submit">Submit</button>
   </div>
@@ -162,8 +184,11 @@
       const career = document.querySelector("select[name='career']").value;
       const voice = document.querySelector("select[name='voice']").value;
       const speed = parseFloat(document.querySelector("input[name='speed']").value);
+      const model = document.querySelector("select[name='model']").value;
+      const newsapi = document.querySelector("input[name='newsapi']").value;
+      const modelapi = document.querySelector("input[name='modelapi']").value;
   
-      const data = { category, style, career, voice, speed };
+      const data = { category, style, career, voice, speed, model, newsapi, modelapi };
   
       fetch("/api/generate-podcast/", {
         method: "POST",

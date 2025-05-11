@@ -18,13 +18,19 @@ def test_podcast_endpoint(
         "voice": voice,
         "speed": speed
     }
+    
+    # Set headers to exempt from CSRF
+    headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    }
 
     print(f"Sending request to {url}...")
     print(f"Payload: {json.dumps(payload, indent=2)}")
 
     try:
         # Send POST request
-        response = requests.post(url, json=payload)
+        response = requests.post(url, json=payload, headers=headers)
 
         # Check if request was successful
         if response.status_code == 200:

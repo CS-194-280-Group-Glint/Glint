@@ -45,3 +45,9 @@ class PodcastScriptGeneration(dspy.Signature):
         desc="Full podcast script with narration, audio cues, and styled delivery",
         prefix="**Final Podcast Script**:\n"
     )
+
+class NewsClassification(dspy.Signature):
+    """Signature for classifying and summarizing news articles into important and worth mentioning categories."""
+    user_instructions: str = dspy.InputField()
+    important_news: str = dspy.OutputField(desc="A summary of the most important news articles")
+    mention_news: str = dspy.OutputField(desc="A summary of news worth mentioning but less critical")

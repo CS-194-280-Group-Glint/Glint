@@ -165,6 +165,12 @@
     submitBtn.addEventListener("click", function (e) {
       e.preventDefault();
 
+      const selectedCategories = document.querySelectorAll("input[name='category']:checked");
+      if (selectedCategories.length === 0) {
+        alert("Please select at least one category.");
+        return;
+      }
+
       formCard.style.display = "none";
       loadingWrapper.style.display = "flex";
       let percent = 0;

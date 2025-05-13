@@ -15,6 +15,7 @@ import logging
 import uuid
 import traceback
 from django.views.decorators.csrf import csrf_exempt
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,13 @@ def podcast(request):
         return JsonResponse({'error': audio["error"]}, status=404)
 
     path = audio["data"]
-    context = {'audio_file': path}
+    script_text = audio.get("script", "")
+    clean_text = re.sub(r"\[[^\]]*\]", "", script_text)
+    clean_text = re.sub(r"\*\*[^*]+:\*\*", "", clean_text)  # Remove text in brackets
+    context = {
+        'audio_file': path,
+        'transcript': clean_text
+    }
 
     return render(request, 'test.html', context)
 
@@ -109,7 +116,7 @@ def generate_podcast(
                            api_key=openai_api_key)
     if not audio["result"]:
         return {"result": False, "error": audio["error"]}
-    return {"result": True, "data": audio["data"]}
+    return {"result": True, "data": audio["data"], "script": script}
 
 
 def text_to_speech(

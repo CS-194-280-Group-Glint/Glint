@@ -350,3 +350,32 @@ audio {
 .transcript-box::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.4); 
 }
+
+.glint-header {
+  text-align: center;
+  z-index: 999;
+  position: relative;
+}
+
+.glint-title {
+  font-size: 46px;
+  font-weight: 800;
+  background: linear-gradient(90deg, #8a6eff, #4dc1ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: fadeInUp 1s ease-out;
+  letter-spacing: 2px;
+  text-shadow: 0 0 5px #8acef8, 0 0 10px #8ab4f8;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

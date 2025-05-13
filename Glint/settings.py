@@ -133,6 +133,6 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-NEWS_API_KEY = os.getenv('NEWS_API_KEY')
+NEWS_API_KEY = '5d315fbb69a2499f981f21b934617e1f'
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 

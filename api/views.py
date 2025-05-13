@@ -50,7 +50,7 @@ def podcast(request):
     path = audio["data"]
     script_text = audio.get("script", "")
     clean_text = re.sub(r"\[[^\]]*\]", "", script_text)
-    clean_text = re.sub(r"\*\*[^*]+:\*\*", "", clean_text)  # Remove text in brackets
+    clean_text = re.sub(r"\*\*[^*:\n]+:\*\*", "", clean_text)  # Remove text in brackets
     context = {
         'audio_file': path,
         'transcript': clean_text

@@ -16,6 +16,7 @@ class SummaryAgent:
     
     def __init__(
         self,
+        api_key: str,
         provider: str = "openai",
         model_name: str = "gpt-4o",
     ):
@@ -27,7 +28,7 @@ class SummaryAgent:
             model_name: The model to use (e.g., "gpt-4o", "o1-mini")
         """
         # Get the language model but don't try to globally configure DSPy
-        self.lm = LMFactory.get_model(provider, model_name)
+        self.lm = LMFactory.get_model(provider, model_name, api_key)
         
     def generate(self, signature, prompt_text):
         """Internal method to generate content using DSPy with explicit LM."""

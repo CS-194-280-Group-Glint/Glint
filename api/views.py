@@ -1,3 +1,4 @@
+import datetime
 from typing import Dict, Optional
 from django.conf import settings
 from agent.text_to_audio import TextToAudio
@@ -17,6 +18,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger(__name__)
 
+
 @csrf_exempt
 def podcast(request):
     if request.method != 'POST':
@@ -33,71 +35,73 @@ def podcast(request):
     openai_api_key = data.get('modelapi') or settings.OPENAI_API_KEY
 
     audio = generate_podcast(category=category,
-                            style=style, 
-                            career=career, 
-                            voice=voice, 
-                            speed=speed, 
-                            model=model,
-                            news_api_key=news_api_key,
-                            openai_api_key=openai_api_key)
+                             style=style,
+                             career=career,
+                             voice=voice,
+                             speed=speed,
+                             model=model,
+                             news_api_key=news_api_key,
+                             openai_api_key=openai_api_key)
 
     if not audio["result"]:
         return JsonResponse({'error': audio["error"]}, status=404)
-    
+
     path = audio["data"]
     context = {'audio_file': path}
 
     return render(request, 'test.html', context)
+
 
 def index(request):
     return render(request, 'index.html')
 
 
 def generate_podcast(
+        news_api_key: str,
+        openai_api_key: str,
         category: list,
         style: str,
         career: str,
         voice: str = "nova",
         speed: float = 1.0,
         model: str = "gpt-4o",
-        news_api_key: str = None,
-        openai_api_key: str = None
 ) -> Dict:
     all_news = []
     for c in category:
         all_news.append(get_top_news(api_key=news_api_key, category=c, page_size=5))
-     
+
     # Use the new classify_news function to split important and worth mentioning news
-    news_classification = classify_news(
-        news_list=all_news,
-        user_interests=category,
-        user_career=career
-    )
-    
+    news_classification = classify_news(api_key=openai_api_key, news_list=all_news, user_interests=category,
+                                        user_career=career)
+
     if not news_classification["result"]:
         return {"result": False, "error": news_classification["error"]}
-    
+
     classified_news = news_classification["data"]
     important_news = classified_news["important"]
     mention_news = classified_news["mention"]
-    
+
     # Create a combined news summary with clearly marked sections
     combined_summary = f"Important News:\n{important_news}\n\nWorth Mentioning:\n{mention_news}"
-    
+
     # Pass user interests and career for personalized analysis
-    analysis = analyze_text(combined_summary, user_interests=category, user_career=career)
+    analysis = analyze_text(combined_summary, user_interests=category, user_career=career, api_key=openai_api_key)
     if not analysis["result"]:
         return {"result": False, "error": analysis["error"]}
+
     analysis = analysis["data"]
 
-    # 要加一个获取当前时间+天气 连成字符串的function call
+    now = datetime.datetime.now()
+    time_str = now.strftime("%Y-%m-%d %H:%M")
 
     script = write_script(news_summary=combined_summary,
-                          weather="",
+                          weather=time_str,
                           reflection=str(analysis),
-                          user_style=style)
+                          user_style=style,
+                          api_key=openai_api_key)
     if not script["result"]:
         return {"result": False, "error": script["error"]}
+
     script = script["data"]
     audio = text_to_speech(text=script,
                            speed=speed,
@@ -149,7 +153,7 @@ def text_to_speech(
         rel_path = str(output_path / file_name)
 
         # Initialize and convert
-        converter = TextToAudio(api_key=settings.OPENAI_API_KEY, model=model, voice=voice)
+        converter = TextToAudio(api_key=api_key, model=model, voice=voice)
         converter.convert(text=text, output_path=rel_path, speed=speed)
 
         return {"result": True, "data": rel_path}
@@ -160,6 +164,7 @@ def text_to_speech(
 
 def summarize_text(
         text: str,
+        api_key: str,
         max_length: Optional[int] = None,
         with_key_points: bool = False,
         bullet_format: bool = False,
@@ -189,13 +194,13 @@ def summarize_text(
     if not text.strip():
         return {"result": False, 'error': 'Text is required'}
 
-    agent = SummaryAgent(model_name=model)
+    agent = SummaryAgent(api_key=api_key, model_name=model)
 
     try:
         if bullet_format:
             bullets = agent.bullet_summary(
-                text, 
-                num_points=num_bullets, 
+                text,
+                num_points=num_bullets,
                 content_type=content_type,
                 user_interests=user_interests,
                 user_career=user_career
@@ -217,6 +222,7 @@ def summarize_text(
 
 def analyze_text(
         summary: str,
+        api_key: str,
         user_interests: list = None,
         user_career: str = None,
         model: str = "gpt-4o"
@@ -236,7 +242,7 @@ def analyze_text(
     if not summary.strip():
         return {"result": False, 'error': 'Summary is required'}
 
-    agent = AnalysisAgent(model_name=model)
+    agent = AnalysisAgent(api_key=api_key, model_name=model)
 
     try:
         result = agent.analyze_all(summary, user_interests, user_career)
@@ -246,13 +252,14 @@ def analyze_text(
 
 
 def write_script(
+        api_key: str,
         news_summary: str,
         weather: str,
         reflection: str,
         user_style: Optional[str] = None,
         length_minutes: int = 10
 ) -> Dict:
-    agent = PodcastScriptAgent()
+    agent = PodcastScriptAgent(api_key=api_key)
 
     try:
         script = agent.generate_script(
@@ -283,29 +290,29 @@ def analyze_text_endpoint(request):
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
+
     try:
         data = json.loads(request.body)
         summary = data.get('summary', '')
         user_interests = data.get('user_interests', None)
         user_career = data.get('user_career', None)
         model = data.get('model', 'gpt-4o')
-        
+
         if not summary:
             return JsonResponse({'error': 'Summary text is required'}, status=400)
-        
+
         result = analyze_text(
             summary=summary,
             user_interests=user_interests,
             user_career=user_career,
             model=model
         )
-        
+
         if result['result']:
             return JsonResponse(result['data'], status=200)
         else:
             return JsonResponse({'error': result['error']}, status=400)
-            
+
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON data'}, status=400)
     except Exception as e:
@@ -333,7 +340,7 @@ def summarize_text_endpoint(request):
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
+
     try:
         data = json.loads(request.body)
         text = data.get('text', '')
@@ -345,10 +352,11 @@ def summarize_text_endpoint(request):
         user_interests = data.get('user_interests')
         user_career = data.get('user_career')
         model = data.get('model', 'gpt-4o')
-        
+        openai_api_key = data.get('modelapi') or settings.OPENAI_API_KEY
+
         if not text:
             return JsonResponse({'error': 'Text is required'}, status=400)
-        
+
         result = summarize_text(
             text=text,
             max_length=max_length,
@@ -358,14 +366,15 @@ def summarize_text_endpoint(request):
             content_type=content_type,
             user_interests=user_interests,
             user_career=user_career,
-            model=model
+            model=model,
+            api_key=openai_api_key
         )
-        
+
         if result['result']:
             return JsonResponse(result['data'], status=200)
         else:
             return JsonResponse({'error': result['error']}, status=400)
-            
+
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON data'}, status=400)
     except Exception as e:
@@ -373,6 +382,7 @@ def summarize_text_endpoint(request):
 
 
 def classify_news(
+        api_key: str,
         news_list: list,
         user_interests: list = None,
         user_career: str = None,
@@ -393,7 +403,7 @@ def classify_news(
     if not news_list or len(news_list) == 0:
         return {"result": False, 'error': 'News list is empty'}
 
-    agent = SummaryAgent(model_name=model)
+    agent = SummaryAgent(model_name=model, api_key=api_key)
 
     try:
         result = agent.classify_and_summarize_news(
@@ -422,29 +432,29 @@ def classify_news_endpoint(request):
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
+
     try:
         data = json.loads(request.body)
         news_list = data.get('news_list', [])
         user_interests = data.get('user_interests')
         user_career = data.get('user_career')
         model = data.get('model', 'gpt-4o')
-        
+
         if not news_list:
             return JsonResponse({'error': 'News list is required'}, status=400)
-        
+
         result = classify_news(
             news_list=news_list,
             user_interests=user_interests,
             user_career=user_career,
             model=model
         )
-        
+
         if result['result']:
             return JsonResponse(result['data'], status=200)
         else:
             return JsonResponse({'error': result['error']}, status=400)
-            
+
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON data'}, status=400)
     except Exception as e:

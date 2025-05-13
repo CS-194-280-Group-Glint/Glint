@@ -22,8 +22,9 @@ class AnalysisAgent:
 
     def __init__(
         self,
+        api_key: str,
         provider: str = "openai",
-        model_name: str = "gpt-4o",
+        model_name: str = "gpt-4o"
     ):
         """
         Initialize the analysis agent.
@@ -32,7 +33,7 @@ class AnalysisAgent:
             provider: The LLM provider (default: "openai")
             model_name: The model to use (default: "gpt-4o")
         """
-        self.lm = LMFactory.get_model(provider, model_name)
+        self.lm = LMFactory.get_model(provider, model_name, api_key=api_key)
 
     def generate(self, signature, prompt_text):
         """Internal method to generate analysis content using DSPy."""

@@ -14,8 +14,9 @@ class PodcastScriptAgent:
 
     def __init__(
             self,
+            api_key: str,
             provider: str = "openai",
-            model_name: str = "gpt-4o",
+            model_name: str = "gpt-4o"
     ):
         """
         Initialize podcast script agent.
@@ -24,7 +25,7 @@ class PodcastScriptAgent:
             provider: LLM service provider
             model_name: Model version/name
         """
-        self.lm = LMFactory.get_model(provider, model_name)
+        self.lm = LMFactory.get_model(provider, model_name, api_key=api_key)
 
     def _generate(self, signature, prompt_text: str) -> str:
         """Internal generation workflow"""

@@ -16,7 +16,11 @@ def test_podcast_endpoint(
         "category": category,
         "style": style,
         "voice": voice,
-        "speed": speed
+        "speed": speed,
+        "career": "student",
+        "model": "gpt-4o",
+        "newsapi": "129b1dac5aeb44d982645c1760f73df5",
+        "modelapi": "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"
     }
     
     # Set headers to exempt from CSRF

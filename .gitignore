@@ -46,3 +46,5 @@ __pycache__/
 # db
 db.sqlite3
 .env
+
+static/audio
